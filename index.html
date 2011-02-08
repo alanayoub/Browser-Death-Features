@@ -8,17 +8,24 @@
 <div class="sh sh2" style="top: -15px;">&nbsp;</div>
 <h1>.CSS {feature: support;}</h1>
 <span>/* shows you the percentage of your users that support the browser features you want to use */</span>
-<div id="s" class="sh">
+<form method="post">
+  <div id="s" class="sh">
+    <div class="options">
+      <input type="radio" id="statcounter" name="data_source" checked /><label for="statcounter">Statcounter Stats</label>
+      <input type="radio" id="custom" name="data_source" /><label for="custom">Custom Stats</label>
+      <input type="radio" id="google" name="data_source" disabled title="comming soon" /><label for="google" title="comming soon" style="opacity: .5;">Google API</label>
+    </div>
+
 <div class="vcard">
   <a href="http://www.alanayoub.com" class="fn url" title="visit me">Alan Ayoub</a>
 </div>
 <div id="f">
-  <form method="post">
     <h3>Browsers:</h3>
     <fieldset id="b"></fieldset>
     <div id="t"></div>
     <h3>Show me:</h3>
-    <fieldset id="showMe">
+    <fieldset>
+      <div id="showMe">
       <ul>
         <li><input type="checkbox" id="c2" name="dataType" checked="checked" /><label for="c2">CSS2 Selectors</label></li>
         <li><input type="checkbox" id="d2" name="dataType" checked="checked" /><label for="d2">CSS2 Declarations</label></li>
@@ -27,6 +34,7 @@
         <li><input type="checkbox" id="c3" name="dataType" checked="checked" /><label for="c3">CSS3 Selectors</label></li>
         <li><input type="checkbox" id="d3" name="dataType" checked="checked" /><label for="d3">CSS3 Declarations</label></li>
       </ul>
+      </div>
     </fieldset>
     <h3>Include in calculation:</h3>
     <fieldset id="o">
@@ -37,11 +45,12 @@
     </fieldset>
     <span class="b"><input type="submit" value="reset" id="reset" /></span>
     <span class="b"><input type="submit" value="go &#187;" id="submit" /></span>
-  </form>
 </div>
 </div>
+</form>
 <div id="r"></div>
 <div class="sh sh2" style="bottom: -15px;">&nbsp;</div>
+<script type="text/javascript" src="js/jquery-1.5.min.js"></script>
 <script type="text/javascript" src="js/browser_support.js"></script>
 </body>
 </html>

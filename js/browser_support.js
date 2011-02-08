@@ -5,7 +5,6 @@
  * @version 0.1
  */
 
-
 /**
  * The whole app is contained under this namespace (FS = Feature Support)
  * @namespace
@@ -15,15 +14,16 @@ var FS = (function (window,document,undefined) {
     /** @private */
     var data,
         util,
+        timer,
         handleForm,
         processData,
         VENDOR_PROPERTIES,
         IE_FILTERS,
         browserArr = "IE5.5|IE6|IE7|IE8|FF2.0|FF3.0|FF3.5|FF3.6|SA3.0|SA3.1|SA4.0|SA5.0|CH1|CH2|CH3|CH4|CH5|OP10|OP10.6".split('|'),
-        $,
+        _$,
         form = document.getElementsByTagName('form')[0];
 
-    $ = function (id) {
+    _$ = function (id) {
         return document.getElementById(id);
     },
 
@@ -39,7 +39,7 @@ var FS = (function (window,document,undefined) {
          * @type String
          */
         returnHTML: function (features) {
-            var result = '', 
+            var result = '',
                 i = features.length;
             while (i--) {
                 result += this.getSingleResultTable(features[i]);
@@ -164,7 +164,7 @@ var FS = (function (window,document,undefined) {
          * @type Object
          */
         compatibilityData: function (type) {
-            
+
                                                                               //  -IE- -FF- -SA- -CH-- OP
                                                                               //                       11
             var data = {                                                      //  5678 2333 3345 12345 00
@@ -235,7 +235,7 @@ var FS = (function (window,document,undefined) {
                             '~ selector                                          &0011 1111 1111 11111 11'
                     ]
                 },
-                                                                              //  -IE- -FF- -SA- -CH-- OP 
+                                                                              //  -IE- -FF- -SA- -CH-- OP
                                                                               //                       11
                                                                               //  5678 2333 3345 12345 00
                 css21: {                                                      //  .... .... .... ..... ..
@@ -363,144 +363,249 @@ var FS = (function (window,document,undefined) {
         browserData: function () {
             var i = browserArr.length, prop, frm, val, obj = {};
             while (i--) {
-                prop = browserArr[i]; // IE5.5
-                frm = prop.replace('.', ''); // IE55
-                val = parseFloat($(frm).value, 10); // 16.3
+                prop = browserArr[i];                       // IE5.5
+                frm = prop.replace('.', '');                // IE55
+                val = parseFloat(_$(frm).value, 10);        // 16.3
                 obj[prop] = val;
             }
             return obj;
         }
     };
 
-
     /**
      * @namespace
-     * A bunch of methods to manage the form. Uses localstorage to save/load the form state
+     * A bunch of methods to manage the form. Uses localstorage and url params to save/load the form state
      */
     handleForm = {
 
-        formId: "bp",
+        /**
+         * Build the HTML form
+         */
+        build: function () {
 
-        data: {
-             chrome: {
-                 name: "Chrome",
-                 cssClass: "ch",
-                 versions: {
-                     'CH1': "1.0",
-                     'CH2': "2.0",
-                     'CH3': "3.0",
-                     'CH4': "4.0",
-                     'CH5': "5.0"
-                 }
-             },
-             firefox: {
-                 name: "Firefox",
-                 cssClass: "ff",
-                 versions: {
-                     'FF20': "2.0",
-                     'FF30': "3.0",
-                     'FF35': "3.5",
-                     'FF36': "3.6"
-                 }
-             },
-             safari: {
-                 name: "Safari",
-                 cssClass: "sa",
-                 versions: {
-                     'SA30': "3.0",
-                     'SA31': "3.1",
-                     'SA40': "4.0",
-                     'SA50': "5.0"
-                 }
-             },
-             explorer: {
-                 name: "Internet Explorer",
-                 cssClass: "ie",
-                 versions: {
-                     'IE55': "5.5",
-                     'IE6': "6.0",
-                     'IE7': "7.0",
-                     'IE8': "8.0"
-                 }
-             },
-             opera: {
-                 name: "Opera",
-                 cssClass: "op",
-                 versions: {
-                     'OP10': "10.0",
-                     'OP106': "10.6"
-                 }
-             }
-        },
+            var browsersObj = {
+                    chrome: {
+                        name: "Chrome",
+                        cssClass: "ch",
+                        versions: {
+                            'CH1': "1.0",
+                            'CH2': "2.0",
+                            'CH3': "3.0",
+                            'CH4': "4.0",
+                            'CH5': "5.0"
+                        }
+                    },
+                    firefox: {
+                        name: "Firefox",
+                        cssClass: "ff",
+                        versions: {
+                            'FF20': "2.0",
+                            'FF30': "3.0",
+                            'FF35': "3.5",
+                            'FF36': "3.6"
+                        }
+                    },
+                    safari: {
+                        name: "Safari",
+                        cssClass: "sa",
+                        versions: {
+                            'SA30': "3.0",
+                            'SA31': "3.1",
+                            'SA40': "4.0",
+                            'SA50': "5.0"
+                        }
+                    },
+                    explorer: {
+                        name: "Internet Explorer",
+                        cssClass: "ie",
+                        versions: {
+                            'IE55': "5.5",
+                            'IE6': "6.0",
+                            'IE7': "7.0",
+                            'IE8': "8.0"
+                        }
+                    },
+                    opera: {
+                        name: "Opera",
+                        cssClass: "op",
+                        versions: {
+                            'OP10': "10.0",
+                            'OP106': "10.6"
+                        }
+                    }
+            },
+            i, html = "";
 
-        getFields: function (obj) {
-            var i,
-                html = "";
-            html = '<ul><span class=' + obj.cssClass + '>' + obj.name + '</span>';
-            for (i in obj.versions) {
-                if (obj.versions.hasOwnProperty(i)) {
-                html += '<li>';
-                html += '<label for=' + i + '>' + obj.versions[i] + '</label>';
-                html += '<input type=text id=' + i + ' name='+ this.formId +' />%';
-                html += '</li>';
+            for (i in browsersObj) {
+                if (browsersObj.hasOwnProperty(i)) {
+                    html += getFields(browsersObj[i]);
                 }
             }
-            html += '</ul>';
-            return html;
-        },
-
-        display: function () {
-            var i,
-                html = "",
-                obj = this.data;
-            for (i in obj) {
-                if (obj.hasOwnProperty(i)) {
-                    html += this.getFields(obj[i]);
+            
+            function getFields(browser) {
+                var i, html = "";
+                html = '<ul><span class=' + browser.cssClass + '>' + browser.name + '</span>';
+                for (i in browser.versions) {
+                    if (browser.versions.hasOwnProperty(i)) {
+                    html += '<li>';
+                    html += '  <label for=' + i + '>' + browser.versions[i] + '</label>';
+                    html += '  <input type=text id=' + i + ' name=bp />%';
+                    html += '</li>';
+                    }
                 }
+                html += '</ul>';
+                return html;
             }
+
             return html;
         },
 
         /**
-         * Saves the form info to localStorage
+         * JSONP statcounter stats
          */
-        saveStore: function () {
-            var input = form.getElementsByTagName("input"),
-                arr = [],
-                i = input.length;
-            while (i--) {
-                arr[i] = input[i].checked || input[i].value;
+        getStatCounterStats: function () {
+            var mapBrowserNames = {
+                     'Chrome 1.0':  'CH1',
+                     'Chrome 2.0':  'CH2',
+                     'Chrome 3.0':  'CH3',
+                     'Chrome 4.0':  'CH4',
+                     'Chrome 5.0':  'CH5',
+                     'Chrome 6.0':  'CH6',
+                     'Chrome 7.0':  'CH7',
+                     'Chrome 8.0':  'CH8',
+                     'Chrome 9.0':  'CH9',
+                     'Chrome 10.0': 'CH10',
+                     'Firefox 2.0': 'FF20',
+                     'Firefox 3.0': 'FF30',
+                     'Firefox 3.5': 'FF35',
+                     'Firefox 3.6': 'FF36',
+                     'Firefox 4.0': 'FF4',
+                     'Safari 3.0':  'SA30',
+                     'Safari 3.1':  'SA31',
+                     'Safari 4.0':  'SA40',
+                     'Safari 4.1':  'SA41',
+                     'Safari 5.0':  'SA50',
+                     'IE 5.5':      'IE55',
+                     'IE 6.0':      'IE6',
+                     'IE 7.0':      'IE7',
+                     'IE 8.0':      'IE8',
+                     'IE 9.0':      'IE9',
+                     'Opera 10.0':  'OP10',
+                     'Opera 10.6':  'OP106',
+                     'Opera 11.0':  'OP11'
+            };
+            if (localStorage.statcounter) {
+                window.location = localStorage.statcounter;
+                handleForm.populateForm().highlightErrors().submit();
+                return this;
             }
-            window.location = '#' + encodeURIComponent(arr);
-            localStorage.u = window.location;
+            /**
+             * Yahoo Pipe that gets global browser statistics for all browsers over 0.1% of traffic.
+             * @see http://pipes.yahoo.com/pipes/pipe.info?_id=b2e73797535852444e51e87634dd1c64
+             */
+            $.getJSON('http://pipes.yahoo.com/pipes/pipe.run?_id=b2e73797535852444e51e87634dd1c64&_render=json&_callback=?',
+                    function(data) {
+                        var d = data.value.items, i = d.length, statCounterArr = [];
+                        while (i--) statCounterArr[i] = mapBrowserNames[d[i]["browser "]] + '|' + d[i].percentage;
+                        localStorage.statcounter = '#statcounter/' + handleForm.getFormOptions() + encodeURIComponent(statCounterArr);
+                        window.location = localStorage.statcounter;
+                        handleForm.populateForm().highlightErrors().submit().startTimer();
+                    });
             return this
         },
 
+        startTimer: function () {
+            var currentTime = new Date(),
+                message = '',
+                timeStamp;
+
+            localStorage.statcounterTimeStamp
+                    ? timeStamp = localStorage.statcounterTimeStamp
+                    : timeStamp = localStorage.statcounterTimeStamp = currentTime.getTime();
+
+            window.clearInterval(timer);
+            timer = window.setInterval (function () {
+                var secondsElapsed = Math.ceil((new Date().getTime() - timeStamp) / 1000);
+                switch (true) {
+                    case secondsElapsed > 60 * 60 * 24: // days
+                         message = Math.floor(secondsElapsed/86400) + ' day(s) ago';
+                    break;
+                    case secondsElapsed < 60: // seconds
+                         message = 'updated seconds ago';
+                    break;
+                    case secondsElapsed < 60 * 60: // minutes
+                         message = 'about ' + Math.floor(secondsElapsed/60) + ' minute(s) ago';
+                    break;
+                    case secondsElapsed < 60 * 60 * 24: // hours
+                         message = Math.floor(secondsElapsed/3600) + ' hour(s) ago';
+                    break;
+                }
+                $('[for=statcounter] span').html(message);
+            }, 1000);
+            return this;
+        },
+
         /**
-         * If localStorage is available, and it has been populated, this method will
-         * populate the form with the stored information, update the onscreen message util.message.add()
-         * and then call handleForm.submit()
-         * @requires util.message.add()
-         * @requires handleForm.submit()
+         * Gets the custom stats from either the url or localstorage. If there aren't any it adds a default one
          */
-        loadStore: function () {
-            var input = form.getElementsByTagName("input"),
-                arr = [],
-                i = input.length;
-            if (window.location.hash) {
-                arr = decodeURIComponent(window.location.hash).replace('#', '').split(',');
-                while (i--) {
-                    input[i].checked ?
-                            input[i].checked = arr[i] :
-                            input[i].value = arr[i];
-                }
-                handleForm.submit();
+        getCustomStats: function () {
+            var hash = decodeURIComponent(window.location.hash);
+            if (hash) {
+                if (hash !== decodeURIComponent(localStorage.statcounter)) localStorage.custom = hash;
+            } else if (localStorage.custom) {
+                window.location = localStorage.custom;
             } else {
-                if (localStorage.u) {
-                    window.location = localStorage.u;
-                    window.location.reload();
-                }
+                // store zero values
+                var arr = [];
+                $.each(browserArr, function (index, value) {
+                    arr[index] = value.replace('.', '') + '|0';
+                });
+                localStorage.custom = '#custom/' + handleForm.getFormOptions() + encodeURIComponent(arr);
+                window.location = localStorage.custom;
             }
+            return this
+        },
+
+        updateUrl: function (target) {
+            var arr = [];
+            $('#b input').each(function () {
+                arr.push($(this).attr('id') + '|' + $(this).val());
+            });
+            localStorage[target] = '#' + target + '/' + handleForm.getFormOptions() + encodeURIComponent(arr);
+            window.location = localStorage[target];
+            return this
+        },
+
+        populateForm: function (target) { // statcounter or custom
+            var data, arr, i,
+                input = form.getElementsByTagName("input");
+
+            this.zeroForm();
+
+            switch (target) {
+                case 'statcounter': data = localStorage.statcounter; break;
+                case 'custom': data = localStorage.custom; break;
+                default: data = localStorage.statcounter; break;
+            }
+
+            arr = decodeURIComponent(data).replace(/\#[a-z0-9/]+\//i, '').split(',');
+            i = arr.length;
+
+            // Populate the form
+            while (i--) $('#' + arr[i].split('|')[0]).val(arr[i].split('|')[1]);
+
+            // Fill the rest of the form with zeros
+            $('#b input').each(function () {
+                if (!$(this).val()) $(this).val('0');
+            });
+
+            return this
+        },
+
+        submit: function () {
+            IE_FILTERS = $('#i').attr('checked');
+            VENDOR_PROPERTIES = $('#v').attr('checked');
+            $('#r').html(processData.returnHTML(processData.getRequiredInfoTables()));
             util.message.add(handleForm.countInputFields());
             return this
         },
@@ -510,51 +615,43 @@ var FS = (function (window,document,undefined) {
          * @return {Number} floating point Number
          */
         countInputFields: function () {
-            var inputFields = form[this.formId],
-                i = inputFields.length,
-                totalPercent = 0,
+            var totalPercent = 0,
                 regex = /[0-9]/,
-                browserPercentArr = [],
                 value;
-
-            while (i--) {
-                value = inputFields[i].value;
+            $('#b input').each(function () {
+                value = $(this).val();
                 if (regex.test(value)) {
-                    totalPercent = totalPercent + parseFloat(value);
-                    browserPercentArr[i] = parseFloat(value);
+                    totalPercent = totalPercent + parseFloat(value, 10);
                 }
-            }
+            });
             return Math.round(totalPercent*10)/10;
         },
 
         /**
          * Check the input fields for non numeric input. If it finds an error it highlights the field
          */
-        checkError: function () {
-            var inputFields = form[this.formId],
-                i = inputFields.length,
-                regex = /[^0-9.]/,
-                value;
-            while (i--) {
-                value = inputFields[i].value;
-                if (regex.test(value)) {
-                    inputFields[i].style.backgroundColor = "#b10";
-                } else {
-                    inputFields[i].style.backgroundColor = "#fff";
-                }
-            }
+        highlightErrors: function () {
+            $('#b input').each(function () {
+                /[^0-9.]/.test($(this).val())
+                        ? $(this).css({'backgroundColor': '#b10'})
+                        : $(this).css({'backgroundColor': '#fff'});
+            });
             return this
         },
 
-        /**
-         * Checks the user input options, IE_FILTERS, VENDOR_PROPERTIES etc... and populates the table-placeholder ID
-         * @requires processData.getRequiredInfoTables()
-         * @requires processData.returnHTML()
-         */
-        submit: function () {
-            IE_FILTERS = $('i').checked;
-            VENDOR_PROPERTIES = $('v').checked;
-            $("r").innerHTML = processData.returnHTML(processData.getRequiredInfoTables());
+        zeroForm: function () {
+            $('#b input').each(function () {
+                $(this).val('0');
+            });
+            return this
+        },
+
+        getFormOptions: function () {
+            var optionsStr = '', $options = $(':checkbox');
+            $options.each(function () {
+                if ($(this).attr('checked')) optionsStr += $(this).attr('id') + '/'; 
+            });
+            return optionsStr;
         }
 
     };
@@ -570,23 +667,15 @@ var FS = (function (window,document,undefined) {
         message: {
 
             /**
-             * Empties out the HTML message element
-             */
-            clear: function () {
-                $('t').innerHTML = '';
-            },
-
-            /**
              * Updates the HTML message element
              * @param message needs to be a Number
              */
             add: function (message) {
-                var divPercent = $('t');
-
+                var divPercent = _$('t');
                 if (message.constructor === Number) {
-                    message > 100 ?
-                            divPercent.style.color = "#b10" :
-                            divPercent.style.color = "#999";
+                    message > 100
+                            ? divPercent.style.color = "#b10"
+                            : divPercent.style.color = "#080";
                     divPercent.innerHTML = message + '% of users accounted for';
                 }
             }
@@ -597,33 +686,95 @@ var FS = (function (window,document,undefined) {
     return {
         init: function () {
 
-            $('b').innerHTML = handleForm.display();
-            handleForm.loadStore().checkError();
-            util.message.add(handleForm.countInputFields());
+            var dataSource, chkBoxes;
+
+            // Get the data source from the URL
+            dataSource = window.location.hash.split('/')[0].replace('#', '');
+
+            // Build the html for the form
+            $('#b').html(handleForm.build());
+
+            // Set the correct radio for the source
+            $('.options input[id=' + dataSource + ']').attr('checked', 'checked');
+
+            // Insert loading message
+            $('[for=statcounter]').html('Statcounter Stats (<span>loading...</span> - <a id="updateStatCounterStats">update</a>)');
+
+            // Setup checkboxes
+            if (window.location.hash) {
+                chkBoxes = window.location.hash.split('#')[1];                    // custom/c3/d3/i/v/CH1%7C0%...
+                chkBoxes = chkBoxes.replace(/[a-z]+\/([a-z0-9/]+)\/.*/i, '$1');   // c3/d3/i/v/
+                $(':checkbox').each(function () {
+                    $(this).attr('checked', '');
+                });
+                $.each(chkBoxes.split('/'), function () {
+                    $('#' + this).attr('checked', 'checked');
+                });
+            }
+
+            switch (dataSource) {
+                case 'statcounter': handleForm.getStatCounterStats().startTimer(); break;
+                case 'custom': handleForm.getCustomStats()
+                                         .populateForm(dataSource)
+                                         .highlightErrors() 
+                                         .updateUrl(dataSource)
+                                         .startTimer()
+                                         .submit(); break;
+                default: handleForm.getStatCounterStats().startTimer(); break;
+            }
 
             /**
-             * Handle submit button
+             * Switch data sources
              */
-            $("submit").onclick = function () {
-                handleForm.submit();
-                return false
-            };
+            $('.options').mousedown(function (e) {
+                var dataSource, target = e.target;
+                if (e.target.nodeName === 'SPAN') {dataSource = $(target).parent().attr('for')}
+                if (e.target.nodeName === 'LABEL') {dataSource = $(target).attr('for')}
+                if (e.target.nodeName === 'INPUT') {dataSource = $(target).attr('id')}
+                switch (dataSource) {
+                    case 'statcounter': handleForm.getStatCounterStats(); break;
+                    case 'custom': handleForm.getCustomStats()
+                                             .populateForm(dataSource)
+                                             .updateUrl(dataSource)
+                                             .highlightErrors(); break;
+                }
+            });
 
+            $('#updateStatCounterStats').click(function () {
+                delete localStorage.statcounter;
+                delete localStorage.statcounterTimeStamp;
+                handleForm.getStatCounterStats();
+                return false;
+            });
+            
             /**
-             * Handle reset button
+             * Update on form field change
              */
-            $("reset").onclick = function () {
-                delete localStorage.u;
-                window.location = ''; return false
-            };
-
-            /**
-             * Update percentage of users field
-             */
-            form.onkeyup = form.onchange =  function () {
+            $('#b').keyup(function () {
+                if ($('.options #custom').attr('checked')) {
+                    handleForm.updateUrl('custom').highlightErrors();
+                }
                 util.message.add(handleForm.countInputFields());
-                handleForm.checkError().saveStore();
-            };
+            });
+
+            /**
+             * Update on checkbox change
+             */
+            $(':checkbox').click(function () {
+                handleForm.updateUrl('custom');
+            });
+
+            $('#submit').click(function () {
+                handleForm.submit(); return false
+            });
+
+            $('#reset').click(function () {
+                delete localStorage.custom;
+                $('.options input[id=custom]').attr('checked', 'checked');
+                handleForm.zeroForm().updateUrl('custom'); return false
+            });
+
+            window.onhashchange = handleForm.submit;
 
         }
     };
